@@ -20,4 +20,4 @@ This started out as a Python program run entirely in the console, but was used s
 
 ### The GUI
 
-![Shared Spending Manager](/Images/preview_shared_spending.png?raw=true)
+![Shared Spending Manager](/Images/preview_shared_spending.gif?raw=true)
