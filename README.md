@@ -1,6 +1,8 @@
 # Shared Spending Manager
 
-I created this application to help me keep track of how much everyone has spent, in a shared spending situation. I track how much my partner and I spend on groceries so we know whose turn it is to pay. This started out as a Python program run entirely in the console, but was used so frequently, I had to learn how to make a GUI for it. The program was ported to Java, and I made a lovely Windows app that does all I need it to do.
+An application for tracking how much has been spent by a group of individuals. It determines which person has paid the least, as well as some statistics on the total spending. The program allows for storage of a name, date, and amount into a SQLite database.
+
+This started out as a Python program run entirely in the console, but was used so frequently, I learned how to make a GUI for it. The program was ported to Java, and it became a deskop application that does all I need it to do.
 
 ### Features
 
