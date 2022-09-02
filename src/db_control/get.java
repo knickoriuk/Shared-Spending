@@ -5,19 +5,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.time.LocalDate;
+import static app.string_reformatter.to_titlecase;
 
 public class get {
 
     /**
-     * Creates a list of all unique names in the database.
+     * Creates a list of all unique names in the database. Names will be in UPPERCASE.
      * @return (ArrayList<String>) An array of names of individuals in the database.
      */
-    private static ArrayList<String> names() {
+    public static ArrayList<String> names() {
         ArrayList<String> names = new ArrayList<>();
         String sql = "SELECT DISTINCT Name FROM Purchases";
         ResultSet rs = db.query(sql);
@@ -40,96 +39,18 @@ public class get {
     }
 
     /**
-     * Finds the total amount of money spent by the given person.
-     * @param name (String) The name of the person to find total purchases of
-     * @return (float) Total value of all purchases made by {name}
-     */
-    public static float individual_sum(String name) {
-        float sum = 0;
-
-        // Verify that the name is valid
-        ArrayList<String> valid_names = get.names();
-        if (!valid_names.contains(name.toUpperCase())) {
-            System.err.println("Name " + name + " not found in database.");
-
-        } else { // Now find the total in the database
-            ResultSet rs;
-            String sql = "SELECT SUM(Cost) FROM Purchases WHERE Name = '";
-            sql = sql.concat(name.toUpperCase() + "'");
-            rs = db.query(sql);
-
-            try {
-                sum = rs.getFloat(1);
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-
-            } finally { // Close the ResultSet
-                try {
-                    rs.close();
-                } catch (SQLException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
-        }
-        return sum;
-    }
-
-    /**
-     * Calculates the total of all spending recorded in the database.
-     * @return (float) Total for all purchases recorded in the database.
-     */
-    public static float all_time_total() {
-        float sum = 0;
-        ResultSet rs;
-        String sql = "SELECT SUM(Cost) FROM Purchases";
-        rs = db.query(sql);
-
-        try {
-            sum = rs.getFloat(1);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-
-        } finally { // Close the ResultSet
-            try {
-                rs.close();
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        return sum;
-    }
-
-    /**
-     * Obtains the date of the first purchase in the database
-     * @return (String) The earliest date stored in the database
-     */
-    public static String earliest_date() {
-        String date = "";
-        String sql = "SELECT MIN(Date) FROM Purchases";
-        ResultSet rs = db.query(sql);
-
-        try {
-            date = rs.getString(1);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-
-        } finally { // Close the ResultSet
-            try {
-                rs.close();
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        return date;
-    }
-
-    /**
-     * Creates an ordered list of names by each person's total spending, in descending order.
+     * Creates an ordered list of names sorted by each person's total spending, in descending order.
+     * @param category (String) The category by which to determine total spending in. If null, includes all categories.
      * @return (ArrayList<String>) Array of names, sorted by total spent, descending
      */
-    private static ArrayList<String> ordered_names() {
+    public static ArrayList<String> ordered_names(String category) {
         ArrayList<String> names_by_cost = new ArrayList<>();
-        String sql = "Select Name FROM Purchases GROUP BY Name ORDER BY Sum(Cost) DESC";
+        String sql;
+        if (category == null) {
+            sql = "Select Name FROM Purchases GROUP BY Name ORDER BY Sum(Cost) DESC";
+        } else {
+            sql = String.format("Select Name FROM Purchases WHERE Category = '%s' GROUP BY Name ORDER BY Sum(Cost) DESC", category.toUpperCase());
+        }
         ResultSet rs = db.query(sql);
 
         try {
@@ -150,16 +71,151 @@ public class get {
     }
 
     /**
-     * Finds the last 10 purchases made. Formats into a 2D array, to be used in a JTable constructor.
+     * Creates a list of all unique categories in the database. Categories will be in UPPERCASE.
+     * @return (ArrayList<String>) An array of categories of purchases in the database.
+     */
+    public static ArrayList<String> categories() {
+        ArrayList<String> categories = new ArrayList<>();
+        String sql = "SELECT DISTINCT Category FROM Purchases";
+        ResultSet rs = db.query(sql);
+
+        try {
+            while (rs.next()) {
+                categories.add(rs.getString("Category"));
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+
+        } finally { // Close the ResultSet
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        return categories;
+    }
+
+    /**
+     * Finds the total amount of money spent by the given person in the listed category.
+     * @param name (String) The name of the person to find total purchases of
+     * @param category (String) The category of purchases to total. If null, total over all categories
+     * @return (float) Total value of all purchases made by {name}
+     */
+    public static float individual_sum(String name, String category) {
+        float sum = 0;
+        ArrayList<String> valid_names = get.names();
+        ArrayList<String> valid_cats = get.categories();
+
+        // Verify that the name is valid
+        if (!valid_names.contains(name.toUpperCase())) {
+            System.err.println("Name " + name + " not found in database.");
+
+        // Verify the category is valid OR null
+        } else if (category != null && !valid_cats.contains(category.toUpperCase())) {
+            System.err.println("Category " + category + " not found in database.");
+
+        } else { // Now find the total in the database
+            ResultSet rs;
+            String sql;
+            if (category == null) {
+                sql = String.format("SELECT SUM(Cost) FROM Purchases WHERE Name = '%s'",
+                        name.toUpperCase());
+            } else {
+                sql = String.format("SELECT SUM(Cost) FROM Purchases WHERE Name = '%s' AND Category = '%s'",
+                        name.toUpperCase(), category.toUpperCase());
+            }
+            rs = db.query(sql);
+
+            try {
+                sum = rs.getFloat(1);
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+
+            } finally { // Close the ResultSet
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+        }
+        return sum;
+    }
+
+    /**
+     * Calculates the total of spending recorded in the database for the given category.
+     * @param category (String) Category to determine total of. If null, total over all categories.
+     * @return (float) Total for all purchases in that category.
+     */
+    public static float total(String category) {
+        float sum = 0;
+        ResultSet rs;
+        String sql;
+        if (category == null) {
+            sql = "SELECT SUM(Cost) FROM Purchases";
+        } else {
+            sql = String.format("SELECT SUM(Cost) FROM Purchases WHERE Category = '%s'", category.toUpperCase());
+        }
+        rs = db.query(sql);
+
+        try {
+            sum = rs.getFloat(1);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+
+        } finally { // Close the ResultSet
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        return sum;
+    }
+
+    /**
+     * Obtains the date of the first purchase in the database within the specified category
+     * @param category (String) The category of transactions to look into. Pass category = null to query over all categories
+     * @return (String) The earliest date
+     */
+    public static String earliest_date(String category) {
+        String date = "";
+        String sql;
+        if (category == null) {
+            sql = "SELECT MIN(Date) FROM Purchases";
+        } else {
+            sql = String.format("SELECT MIN(Date) FROM Purchases WHERE Category = '%s'", category);
+        }
+        ResultSet rs = db.query(sql);
+
+        try {
+            date = rs.getString(1);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+
+        } finally { // Close the ResultSet
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        return date;
+    }
+
+    /**
+     * Finds the last 20 purchases made. Formats into a 2D array, to be used in a JTable constructor.
      * @return (String[][]) Array of {{Date, name, cost}, {Date, name, cost}, ...}
      */
     public static String[][] most_recent_purchases() {
         String name;
         String date;
         String cost;
+        String category;
         int index = 0;
-        String[][] most_recent = new String[10][3];
-        String sql = "SELECT * FROM Purchases ORDER BY Date DESC LIMIT 10";
+        String[][] most_recent = new String[20][4];
+        String sql = "SELECT * FROM Purchases ORDER BY Date DESC LIMIT 20";
         ResultSet rs = db.query(sql);
 
         try {
@@ -167,7 +223,8 @@ public class get {
                 name = to_titlecase(rs.getString("Name"));
                 date = rs.getString("Date");
                 cost = String.format("$%.2f", rs.getFloat("Cost"));
-                most_recent[index] = new String[] {date, name, cost}; // Append this row to the most_recent array
+                category = to_titlecase(rs.getString("Category"));
+                most_recent[index] = new String[] {date, name, cost, category}; // Append this row to the most_recent array
                 index += 1;
             }
         } catch (SQLException e) {
@@ -191,6 +248,7 @@ public class get {
         String name;
         String date;
         String cost;
+        String category;
         String path_out = "";
         FileWriter csv_writer = null;
         String sql = "SELECT * FROM Purchases";
@@ -207,7 +265,8 @@ public class get {
                 name = rs.getString("Name");
                 date = rs.getString("Date");
                 cost = rs.getString("Cost");
-                csv_writer.append(String.format("%s,%s,%s\n", date, name, cost));
+                category = rs.getString("Category");
+                csv_writer.append(String.format("%s,%s,%s,%s\n", date, name, cost, category));
             }
 
         } catch (IOException | SQLException e) {
@@ -228,38 +287,15 @@ public class get {
     }
 
     /**
-     * Converts the database's BLOCK CASE strings to Title Case.
-     * @param input (String) Some text to be converted to title case.
-     * @return (String) The given string, now in Title Case
-     */
-    private static String to_titlecase(String input) {
-        String input_lowercase = input.toLowerCase();
-        StringBuilder output = new StringBuilder(input.length());
-        boolean capitalize_next = true; // Capitalize first letter always
-        for (char c : input_lowercase.toCharArray()) {
-
-            // If space, capitalize next char
-            if (Character.isSpaceChar(c)) {
-                capitalize_next = true;
-
-            // Otherwise if this should be a capital, capitalize it.
-            } else if (capitalize_next) {
-                c = Character.toTitleCase(c);
-                capitalize_next = false;
-            }
-            output.append(c);
-        }
-        return output.toString();
-    }
-
-    /**
-     * Generates a weighted average of money spent per day, weighted by how many years ago the purchase was.
+     * Generates a weighted average of money spent per day, weighted by how many years ago the purchase was. Used to
+     * prevent old entries from affecting the average too much.
+     * @param category (String) The category to determine the weighted average across
      * @return (double) A weighted average of spending per day
      */
-    private static double weighted_average() {
+    public static double weighted_average(String category) {
         double avg = 0;
         double weights = 0;
-        String date = earliest_date();
+        String date = earliest_date(category);
 
         // How many years are recorded?
         LocalDate today = LocalDate.now();
@@ -278,8 +314,15 @@ public class get {
             }
 
             // Get sum of costs in the year, each multiplied by the weight
-            String sql = String.format("SELECT Sum(Cost * %.4f) FROM Purchases WHERE Date BETWEEN '%s' AND '%s'",
-                    year_weight, earlier_date, later_date);
+            String sql;
+            if (category == null) {
+                sql = String.format("SELECT Sum(Cost * %.4f) FROM Purchases WHERE Date BETWEEN '%s' AND '%s'",
+                        year_weight, earlier_date, later_date);
+            } else {
+                sql = String.format("SELECT Sum(Cost * %.4f) FROM Purchases WHERE Date BETWEEN '%s' AND '%s' AND Category = '%s'",
+                        year_weight, earlier_date, later_date, category);
+            }
+
             ResultSet rs = db.query(sql);
 
             try {
@@ -301,52 +344,4 @@ public class get {
         return (avg/weights);
     }
 
-    /**
-     * Generates a summary of all purchases in the database as a printable string.
-     * @return (String) A summary of purchase history in the database.
-     */
-    public static String summary() {
-        float all_time = all_time_total();
-        String date = earliest_date();
-        ArrayList<String> names_list = ordered_names();
-        String summary_output = "";
-
-        // If no data so far, return a 'welcome!' string
-        if (all_time == 0.0) {
-            return "Welcome to the Shared Spending Manager.\n\nAdd transaction history with " +
-                    "\"Add New Purchase\" and a summary will appear here.";
-        }
-
-        // Individual Sums
-        for (String s : names_list) {
-            summary_output = summary_output.concat(String.format("%s has spent $%.2f.\n",
-                    to_titlecase(s),
-                    individual_sum(s)
-            ));
-        }
-        summary_output = summary_output.concat("\n");
-
-        // Differences in sums
-        if (names_list.size() > 1) { // Only bother if there's more than one person in the database
-            for (int i=names_list.size()-1; i>0; i--) {
-                float difference = individual_sum(names_list.get(0)) - individual_sum(names_list.get(i));
-                summary_output = summary_output.concat(String.format("%s has spent $%.2f less than %s.\n",
-                        to_titlecase(names_list.get(i)),
-                        difference,
-                        to_titlecase(names_list.get(0))
-                ));
-            }
-        }
-        summary_output = summary_output.concat("\n");
-
-        // Daily Average and Total
-        LocalDate earliest = LocalDate.parse(date);
-        summary_output = summary_output.concat(String.format("Since %s, $%.2f has been spent, averaging at $%.2f per day.",
-                earliest.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)),
-                all_time,
-                weighted_average()
-        ));
-
-        return summary_output;
-    }
 }

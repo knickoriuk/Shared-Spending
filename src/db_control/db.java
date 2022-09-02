@@ -25,7 +25,7 @@ public class db {
      */
     public static void initialize() {
         Connection conn = connect();
-        String sql = "CREATE TABLE IF NOT EXISTS Purchases (Cost FLOAT, Date TEXT, Name TEXT)";
+        String sql = "CREATE TABLE IF NOT EXISTS Purchases (Cost FLOAT, Date TEXT, Name TEXT, Category TEXT)";
 
         try {
             Statement stmt = conn.createStatement();
@@ -75,11 +75,12 @@ public class db {
      * @param cost (String) Cost of purchase
      * @param date (String) Date of purchase, formatted in YYYY-MM-DD
      * @param name (String) Name of person who made the purchase
+     * @param category (String) Category of purchase; use "" if none
      */
-    protected static void add_purchase(String cost, String date, String name) {
+    protected static void add_purchase(String cost, String date, String name, String category) {
         Connection conn = connect();
-        String sql = String.format("INSERT INTO Purchases (Cost, Date, Name) VALUES ('%s', DATE('%s'), '%s')",
-                cost, date, name.toUpperCase());
+        String sql = String.format("INSERT INTO Purchases (Cost, Date, Name, Category) VALUES ('%s', DATE('%s'), '%s', '%s')",
+                cost, date, name.toUpperCase(), category.toUpperCase());
 
         try {
             Statement stmt = conn.createStatement();
