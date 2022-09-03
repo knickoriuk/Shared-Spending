@@ -202,6 +202,7 @@ public class gui {
         });
 
         // Construct FlowLayouts
+        int buffer_width = 40; // Space between textboxes and right edge of window
         JPanel flow_cost = new JPanel();
         JPanel flow_name = new JPanel();
         JPanel flow_date = new JPanel();
@@ -214,16 +215,16 @@ public class gui {
         flow_commands.setLayout(new FlowLayout(FlowLayout.CENTER));
         flow_cost.add(l_cost);
         flow_cost.add(input_cost);
-        flow_cost.add(Box.createHorizontalStrut(30));
+        flow_cost.add(Box.createHorizontalStrut(buffer_width));
         flow_name.add(l_name);
         flow_name.add(input_name);
-        flow_name.add(Box.createHorizontalStrut(30));
+        flow_name.add(Box.createHorizontalStrut(buffer_width));
         flow_date.add(l_date);
         flow_date.add(input_date);
-        flow_date.add(Box.createHorizontalStrut(30));
+        flow_date.add(Box.createHorizontalStrut(buffer_width));
         flow_cat.add(l_cat);
         flow_cat.add(input_category);
-        flow_cat.add(Box.createHorizontalStrut(30));
+        flow_cat.add(Box.createHorizontalStrut(buffer_width));
         flow_commands.add(b_new_done);
         flow_commands.add(b_new_cancel);
 
