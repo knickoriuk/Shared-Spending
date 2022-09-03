@@ -259,7 +259,7 @@ public class get {
             path_out = new File("shared_spending_export.csv").getAbsolutePath(); // Get path of new file
 
             // Create Header
-            csv_writer.append("Date,Name,Cost\n");
+            csv_writer.append("Date,Name,Cost,Category\n");
 
             while (rs.next()) { // Write Contents
                 name = rs.getString("Name");
